@@ -42,7 +42,7 @@ const availableCars = computed(() => {
 
 const loadFieldsConfig = async () => {
   try {
-    const res = await fetch(`${CFG_URL}/${current_type.value}`)
+    const res = await fetch(`${CFG_URL}/${current_type.value}`, { credentials: 'include' })
     const customKeys = res.ok ? await res.json() : []
     
     const base = baseFieldsConfig[current_type.value] || []
@@ -61,7 +61,8 @@ const syncConfigWithDB = async () => {
     await fetch(`${CFG_URL}/${current_type.value}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(customKeys)
+      body: JSON.stringify(customKeys),
+      credentials: 'include'
     })
   } catch (err) {
     console.error('Config Save Error:', err)
@@ -77,7 +78,7 @@ const onKeyChange = () => {
 
 const loadRecords = async () => {
   try {
-    const res = await fetch(API_URL)
+    const res = await fetch(API_URL, { credentials: 'include' })
     if (res.ok) records.value = await res.json()
   } catch (err) {
     console.error('DB Error:', err)
@@ -86,7 +87,10 @@ const loadRecords = async () => {
 
 const deleteRecord = async (id) => {
   try {
-    await fetch(`${API_URL}/${id}`, { method: 'DELETE' })
+    await fetch(`${API_URL}/${id}`, { 
+      method: 'DELETE',
+      credentials: 'include' 
+    })
     await loadRecords()
   } catch (err) {
     console.error('Delete Error:', err)
@@ -107,7 +111,8 @@ const saveRecord = async () => {
     const res = await fetch(url, {
       method: method,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      credentials: 'include'
     })
     
     if (res.ok) {
@@ -289,7 +294,6 @@ watch(current_type, async () => {
 </template>
 
 <style scoped>
-/* Твои стили без изменений */
 .content-stack { width: 100%; display: flex; flex-direction: column; }
 .grid-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 20px 25px; margin-top: 20px; }
 .dynamic-row { display: grid; grid-template-columns: 1fr 1fr 44px; gap: 10px; align-items: flex-end; }
@@ -322,12 +326,12 @@ li:hover { color: black; background-color: var(--cyan); }
 .btn-edit { border-color: var(--cyan); color: var(--cyan); }
 .btn-del { border-color: var(--red); color: var(--red); }
 #modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95); z-index: 999; display: flex; align-items: center; justify-content: center; }
-.modal-box { background: #000; border: 2px solid var(--cyan); width: 90%; max-width: 900px; max-height: 85vh; display: flex; flex-direction: column; }
+.modal-box { background: #000; border: 2px solid var(--cyan); width: 400px; max-width: 400px; max-height: 85vh; display: flex; flex-direction: column; }
 .shadow-cyan { box-shadow: 0 0 40px rgba(0, 255, 255, 0.3); }
 .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 2px solid var(--cyan); }
 .modal-title { color: var(--cyan); margin: 0; letter-spacing: 2px; }
 .btn-close-modal { background: none; border: 1px solid var(--red); color: var(--red); width: 34px; height: 34px; cursor: pointer; font-size: 18px; }
-.files-grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; padding: 25px; overflow-y: auto; }
+.files-grid-container { display: grid; grid-template-rows: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; padding: 25px; overflow-y: auto; }
 .file-card { position: relative; background: rgba(0, 255, 255, 0.03); border: 1px solid rgba(0, 255, 255, 0.2); padding: 10px; transition: 0.3s; }
 .file-card:hover { border-color: var(--cyan); transform: scale(1.02); }
 .file-preview-box { width: 100%; height: 110px; background: #111; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; cursor: pointer; overflow: hidden; }

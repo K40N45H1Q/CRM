@@ -1,7 +1,27 @@
+<script setup>
+import { defineEmits } from 'vue'
+import { current_type } from "../state.js"
+
+const emit = defineEmits(['logout'])
+
+const handleLogout = async () => {
+  try {
+    // Отправляем запрос на бэкенд для удаления сессии
+    await fetch('http://localhost:8000/api/auth/logout', { 
+      method: 'POST', 
+      credentials: 'include' 
+    })
+  } catch (e) {
+    console.error('Logout request failed')
+  } finally {
+    // В любом случае выкидываем пользователя на экран логина
+    emit('logout')
+  }
+}
+</script>
+
 <template>
-
   <header>
-
     <h2>CRM SYSTEM</h2>
     
     <div class="actions">
@@ -12,15 +32,12 @@
           <li @click="current_type = 'PERSON'">PERSON</li>
         </ul>
       </div>
-      <button class="logout button">LOGOUT</button>
+      <button class="logout button" @click="handleLogout">LOGOUT</button>
     </div>
-
   </header>
-
 </template>
 
 <style scoped>
-
 header {
   display: flex;
   align-items: center;
@@ -54,6 +71,7 @@ ul {
   position: absolute;
   background: black;
   transform: translateY(-10px);
+  z-index: 100;
 }
 
 .dropdown:hover ul {
@@ -70,7 +88,7 @@ li {
 
 li:hover {
   color: black;
-  background-color: var(--cyan)
+  background-color: var(--cyan);
 }
 
 .logout {
@@ -88,9 +106,4 @@ li:hover {
   color: black;
   background-color: var(--cyan);
 }
-
 </style>
-
-<script setup>
-import { current_type } from "../state.js"
-</script>
