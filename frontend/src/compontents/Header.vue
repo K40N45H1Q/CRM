@@ -6,15 +6,13 @@ const emit = defineEmits(['logout'])
 
 const handleLogout = async () => {
   try {
-    // Отправляем запрос на бэкенд для удаления сессии
     await fetch('http://localhost:8000/api/auth/logout', { 
       method: 'POST', 
-      credentials: 'include' 
+      credentials: 'include'
     })
   } catch (e) {
     console.error('Logout request failed')
   } finally {
-    // В любом случае выкидываем пользователя на экран логина
     emit('logout')
   }
 }

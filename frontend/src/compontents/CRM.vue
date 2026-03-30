@@ -7,8 +7,8 @@ const API_URL = 'http://localhost:8000/api/records'
 const CFG_URL = 'http://localhost:8000/api/config'
 
 const baseFieldsConfig = {
-  CAR: ['BRAND', 'MODEL', 'YEAR', 'COLOR'],
-  PERSON: ['NAME', 'SURNAME', 'TIN', 'GENDER', 'CAR']
+  CAR: ['BRAND', 'MODEL', 'YEAR', 'VIN', 'PRICE', 'CONDITION'],
+  PERSON: ['NAME', 'SURNAME', 'CAR', 'AMOUNT', 'TERM' ,'APR']
 }
 
 // --- State ---
@@ -23,8 +23,14 @@ const activeRecord = ref(null)
 
 // --- Computed ---
 
-// Заголовки таблицы всегда следуют за текущими полями в форме
-const tableHeaders = computed(() => fields.value.map(f => f.k))
+// Заголовки таблицы: добавляем расчетные поля только для PERSON
+const tableHeaders = computed(() => {
+  const base = fields.value.map(f => f.k)
+  if (current_type.value === 'PERSON') {
+    return [...base, 'MONTHLY', 'PROFIT']
+  }
+  return base
+})
 
 const availableCars = computed(() => {
   const cars = records.value.filter(r => r.__recordType === 'CAR')
@@ -37,6 +43,28 @@ const availableCars = computed(() => {
     return label ? `${label}${year}` : 'UNKNOWN CAR'
   })
 })
+
+// --- Calculation Logic ---
+
+const calculateMonthly = (r) => {
+  const amount = parseFloat(r.AMOUNT) || 0
+  const term = parseFloat(r.TERM) || 0
+  const apr = parseFloat(r.APR) || 0 // Исправлено с PERCENT на APR
+  if (amount > 0 && term > 0) {
+    const total = amount + (amount * (apr / 100))
+    return (total / term).toFixed(2)
+  }
+  return '0.00'
+}
+
+const calculateProfit = (r) => {
+  const amount = parseFloat(r.AMOUNT) || 0
+  const apr = parseFloat(r.APR) || 0 // Исправлено с PERCENT на APR
+  if (amount > 0 && apr > 0) {
+    return (amount * (apr / 100)).toFixed(2)
+  }
+  return '0.00'
+}
 
 // --- API Logic (Конфигурация полей) ---
 
@@ -69,7 +97,6 @@ const syncConfigWithDB = async () => {
   }
 }
 
-// Вызываем при каждом изменении названия поля
 const onKeyChange = () => {
   syncConfigWithDB()
 }
@@ -88,7 +115,7 @@ const loadRecords = async () => {
 const deleteRecord = async (id) => {
   try {
     await fetch(`${API_URL}/${id}`, { 
-      method: 'DELETE',
+      method: 'DELETE', 
       credentials: 'include' 
     })
     await loadRecords()
@@ -235,7 +262,7 @@ watch(current_type, async () => {
         <button class="btn-ui btn-attach" @click="triggerFiles">ATTACH FILES ({{ tempFiles.length }})</button>
       </div>
       <button class="btn-ui btn-main" @click="saveRecord">
-        {{ editingId ? 'UPDATE DATA' : 'RECORD' }}
+        {{ editingId ? 'UPDATE' : 'RECORD' }}
       </button>
     </div>
 
@@ -251,7 +278,30 @@ watch(current_type, async () => {
         <tbody>
           <tr v-for="r in records" :key="r.id">
             <template v-if="r.__recordType === current_type">
-              <td v-for="header in tableHeaders" :key="header">{{ r[header] || '—' }}</td>
+              <td v-for="header in tableHeaders" :key="header">
+                
+                <template v-if="header === 'MONTHLY'">
+                  <span style="color: var(--cyan);">{{ calculateMonthly(r) }} EUR</span>
+                </template>
+                <template v-else-if="header === 'PROFIT'">
+                  <span style="color: #00ff00;">{{ calculateProfit(r) }} EUR</span>
+                </template>
+
+                <template v-else-if="header === 'TERM' && r[header]">
+                  {{ r[header] }} Months
+                </template>
+                <template v-else-if="header === 'APR' && r[header]">
+                  {{ r[header] }}%
+                </template>
+                <template v-else-if="(header === 'AMOUNT' || header === 'PRICE') && r[header]">
+                  {{ r[header] }} EUR
+                </template>
+
+                <template v-else>
+                  {{ r[header] || '—' }}
+                </template>
+
+              </td>
               <td class="col-shrink text-center"> 
                 <span class="docs-link" @click="activeRecord = r; showModal = true">
                   {{ r.files.length }} Files
@@ -294,51 +344,335 @@ watch(current_type, async () => {
 </template>
 
 <style scoped>
-.content-stack { width: 100%; display: flex; flex-direction: column; }
-.grid-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 20px 25px; margin-top: 20px; }
-.dynamic-row { display: grid; grid-template-columns: 1fr 1fr 44px; gap: 10px; align-items: flex-end; }
-.form-group { display: flex; flex-direction: column; }
-label { color: var(--cyan); font-size: 11px; margin-bottom: 6px; text-transform: uppercase; }
-input { background: rgba(0, 255, 255, 0.05); border: 2px solid var(--cyan); color: white; padding: 0 10px; height: 44px; outline: none; width: 100%; box-sizing: border-box; box-shadow: 0 0 20px rgba(0, 255, 255, 0.2); }
-.dropdown { position: relative; width: 100%; }
-.type-btn { background: rgba(0, 255, 255, 0.05); border: 2px solid var(--cyan); color: white; padding: 0 15px; height: 44px; width: 100%; text-align: left; cursor: pointer; font-weight: bold; text-transform: uppercase; font-size: 11px; box-shadow: 0 0 20px rgba(0, 255, 255, 0.2); transition: 0.3s; }
-.type-btn:hover { background-color: var(--cyan); color: black; }
-ul { left: 0; top: 100%; width: 100%; padding: 0; opacity: 0; margin-top: 10px; list-style: none; transition: 0.3s; visibility: hidden; position: absolute; background: black; transform: translateY(-10px); z-index: 100; border: 2px solid var(--cyan); }
-.dropdown:hover ul { opacity: 1; visibility: visible; transform: translateY(0); }
-li { font-weight: bold; padding: 12px 15px; cursor: pointer; color: white; border-bottom: 1px solid rgba(0,255,255,0.1); }
-li:hover { color: black; background-color: var(--cyan); }
-.scrollable-list { max-height: 200px; overflow-y: auto; }
-.controls-section { display: flex; flex-direction: column; gap: 15px; margin-top: 25px; }
-.sub-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-.btn-ui { cursor: pointer; font-weight: bold; text-transform: uppercase; border: 2px solid var(--cyan); height: 44px; background: transparent; color: var(--cyan); font-size: 11px; transition: 0.2s; }
-.btn-ui:hover { background: var(--cyan); color: black; }
-.btn-main { background: var(--cyan); color: black; border: none; }
-.btn-attach { border-style: dashed; }
-.btn-remove-col { border: 2px solid var(--red) !important; background: black; color: var(--red); height: 44px; width: 44px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px rgba(255, 0, 0, 0.2) !important; }
-.table-wrapper { width: 100%; overflow-x: auto; margin-top: 15px; border: 1px solid rgba(0, 255, 255, 0.1); }
-.debtor-table { width: 100%; border-collapse: collapse; min-width: 650px; }
-.debtor-table th, .debtor-table td { border: 1px solid rgba(0, 255, 255, 0.2); padding: 12px; text-align: left; font-size: 12px; }
-.debtor-table th { color: var(--cyan); background: rgba(0, 255, 255, 0.1); text-transform: uppercase; }
-.col-shrink { width: 1%; white-space: nowrap; }
-.actions-cell { display: flex; gap: 8px; }
-.docs-link { color: var(--cyan); cursor: pointer; text-decoration: underline; font-weight: bold; }
-.btn-action { background: none; border: 1px solid; padding: 6px 12px; cursor: pointer; font-size: 10px; text-transform: uppercase; }
-.btn-edit { border-color: var(--cyan); color: var(--cyan); }
-.btn-del { border-color: var(--red); color: var(--red); }
-#modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95); z-index: 999; display: flex; align-items: center; justify-content: center; }
-.modal-box { background: #000; border: 2px solid var(--cyan); width: 400px; max-width: 400px; max-height: 85vh; display: flex; flex-direction: column; }
-.shadow-cyan { box-shadow: 0 0 40px rgba(0, 255, 255, 0.3); }
-.modal-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 2px solid var(--cyan); }
-.modal-title { color: var(--cyan); margin: 0; letter-spacing: 2px; }
-.btn-close-modal { background: none; border: 1px solid var(--red); color: var(--red); width: 34px; height: 34px; cursor: pointer; font-size: 18px; }
-.files-grid-container { display: grid; grid-template-rows: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; padding: 25px; overflow-y: auto; }
-.file-card { position: relative; background: rgba(0, 255, 255, 0.03); border: 1px solid rgba(0, 255, 255, 0.2); padding: 10px; transition: 0.3s; }
-.file-card:hover { border-color: var(--cyan); transform: scale(1.02); }
-.file-preview-box { width: 100%; height: 110px; background: #111; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; cursor: pointer; overflow: hidden; }
-.file-img { width: 100%; height: 100%; object-fit: cover; }
-.file-icon-big { font-size: 40px; }
-.file-name-label { font-size: 11px; text-align: center; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.btn-del-file { position: absolute; top: 0; right: 0; z-index: 2; background: var(--red); border: none; color: white; width: 24px; height: 24px; cursor: pointer; font-size: 14px; }
-.no-files-msg { grid-column: 1 / -1; text-align: center; color: var(--cyan); opacity: 0.5; padding: 40px; }
-@media (max-width: 600px) { .grid-form { grid-template-columns: 1fr; } .sub-controls { grid-template-columns: 1fr; } }
+.content-stack {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.grid-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+  gap: 20px 25px;
+  margin-top: 20px;
+}
+.dynamic-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 44px;
+  gap: 10px;
+  align-items: flex-end;
+}
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+label {
+  color: var(--cyan);
+  font-size: 11px;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+input {
+  background: rgba(0, 255, 255, 0.05);
+  border: 2px solid var(--cyan);
+  color: white;
+  padding: 0 10px;
+  height: 44px;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+}
+.dropdown {
+  position: relative;
+  width: 100%;
+}
+.type-btn {
+  background: rgba(0, 255, 255, 0.05);
+  border: 2px solid var(--cyan);
+  color: white;
+  padding: 0 15px;
+  height: 44px;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font-weight: bold;
+  text-transform: uppercase;
+  font-size: 11px;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+  transition: 0.3s;
+}
+.type-btn:hover {
+  background-color: var(--cyan);
+  color: black;
+}
+ul {
+  left: 0;
+  top: 100%;
+  width: 100%;
+  padding: 0;
+  opacity: 0;
+  margin-top: 10px;
+  list-style: none;
+  transition: 0.3s;
+  visibility: hidden;
+  position: absolute;
+  background: black;
+  transform: translateY(-10px);
+  z-index: 100;
+  border: 2px solid var(--cyan);
+}
+.dropdown:hover ul {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+li {
+  font-weight: bold;
+  padding: 12px 15px;
+  cursor: pointer;
+  color: white;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+}
+li:hover {
+  color: black;
+  background-color: var(--cyan);
+}
+.scrollable-list {
+  max-height: 200px;
+  overflow-y: auto;
+}
+.controls-section {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 25px;
+}
+.sub-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+.btn-ui {
+  cursor: pointer;
+  font-weight: bold;
+  text-transform: uppercase;
+  border: 2px solid var(--cyan);
+  height: 44px;
+  background: transparent;
+  color: var(--cyan);
+  font-size: 11px;
+  transition: 0.2s;
+}
+.btn-ui:hover {
+  background: var(--cyan);
+  color: black;
+}
+.btn-main {
+  background: var(--cyan);
+  color: black;
+  border: none;
+}
+.btn-main:hover {
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+}
+.btn-attach {
+  border-style: dashed;
+}
+.btn-remove-col {
+  border: 2px solid var(--red) !important;
+  background: black;
+  color: var(--red);
+  height: 44px;
+  width: 44px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 20px rgba(255, 0, 0, 0.2) !important;
+}
+.debtor-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 650px;
+  font-weight: bold;
+}
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  margin-top: 15px;
+  border: 1px solid rgba(0, 255, 255, 0.1);
+}
+.debtor-table th,
+.debtor-table td {
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  padding: 12px;
+  text-align: left;
+  font-size: 12px;
+}
+.debtor-table th {
+  color: var(--cyan);
+  background: rgba(0, 255, 255, 0.1);
+  text-transform: uppercase;
+}
+
+.col-shrink {
+  width: 1%;
+  white-space: nowrap;
+}
+.actions-cell {
+  display: flex;
+  gap: 8px;
+}
+.docs-link {
+  color: var(--cyan);
+  cursor: pointer;
+  text-decoration: underline;
+  font-weight: bold;
+}
+.btn-action {
+  background: none;
+  border: 1px solid;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+.btn-edit {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+.btn-edit:hover {
+  color: black;
+  background-color: var(--cyan)
+}
+.btn-del {
+  border-color: var(--red);
+  color: var(--red);
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+.btn-del:hover {
+  color: black;
+  background-color: var(--red);
+}
+#modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.95);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal-box {
+  background: #000;
+  border: 2px solid var(--cyan);
+  width: 400px;
+  max-width: 400px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+}
+.shadow-cyan {
+  box-shadow: 0 0 40px rgba(0, 255, 255, 0.3);
+}
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 2px solid var(--cyan);
+}
+.modal-title {
+  color: var(--cyan);
+  margin: 0;
+  letter-spacing: 2px;
+}
+.btn-close-modal {
+  background: none;
+  border: 1px solid var(--red);
+  color: var(--red);
+  width: 34px;
+  height: 34px;
+  cursor: pointer;
+  font-size: 18px;
+}
+.files-grid-container {
+  display: grid;
+  grid-template-rows: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 20px;
+  padding: 25px;
+  overflow-y: auto;
+}
+.file-card {
+  position: relative;
+  background: rgba(0, 255, 255, 0.03);
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  padding: 10px;
+  transition: 0.3s;
+}
+.file-card:hover {
+  border-color: var(--cyan);
+  transform: scale(1.02);
+}
+.file-preview-box {
+  width: 100%;
+  height: 110px;
+  background: #111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+  cursor: pointer;
+  overflow: hidden;
+}
+.file-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.file-icon-big {
+  font-size: 40px;
+}
+.file-name-label {
+  font-size: 11px;
+  text-align: center;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.btn-del-file {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 2;
+  background: var(--red);
+  border: none;
+  color: white;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.no-files-msg {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: var(--cyan);
+  opacity: 0.5;
+  padding: 40px;
+}
+@media (max-width: 600px) {
+  .grid-form {
+    grid-template-columns: 1fr;
+  }
+  .sub-controls {
+    grid-template-columns: 1fr;
+  }
+}
 </style>

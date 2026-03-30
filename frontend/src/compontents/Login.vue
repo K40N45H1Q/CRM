@@ -21,7 +21,7 @@ const handleLogin = async () => {
   if (isLoading.value) return
   
   if (!username.value || !password.value) {
-    showNotify('EMPTY FIELDS')
+    showNotify('ACCESS DENIED!')
     return
   }
 
@@ -45,6 +45,7 @@ const handleLogin = async () => {
       }, 600)
     } else {
       showNotify('ACCESS DENIED!')
+      username.value = ''
       password.value = ''
     }
   } catch (error) {
