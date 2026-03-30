@@ -3,3 +3,5 @@ bcrypt==5.0.0
 fastapi==0.135.2
 sqlmodel==0.0.37
 uvicorn==0.40.0
+aiosqlite==0.22.1
+python-dotenv==1.2.1

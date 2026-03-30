@@ -1,18 +1,16 @@
 <script setup>
-import { defineEmits } from 'vue'
-import { current_type } from "../state.js"
-
+import { current_type, isAuthenticated } from "../state.js"
 const emit = defineEmits(['logout'])
-
-const handleLogout = async () => {
+const logout = async () => {
   try {
-    await fetch('http://localhost:8000/api/auth/logout', { 
+    await fetch('http://localhost:8000/api/logout', { 
       method: 'POST', 
       credentials: 'include'
     })
   } catch (e) {
     console.error('Logout request failed')
   } finally {
+    isAuthenticated.value = false
     emit('logout')
   }
 }
@@ -30,7 +28,7 @@ const handleLogout = async () => {
           <li @click="current_type = 'PERSON'">PERSON</li>
         </ul>
       </div>
-      <button class="logout button" @click="handleLogout">LOGOUT</button>
+      <button class="logout button" @click="logout">LOGOUT</button>
     </div>
   </header>
 </template>

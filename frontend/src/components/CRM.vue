@@ -2,218 +2,133 @@
 import { ref, watch, computed, onMounted } from 'vue'
 import { current_type } from '../state.js'
 
-// --- Config ---
-const API_URL = 'http://localhost:8000/api/records'
-const CFG_URL = 'http://localhost:8000/api/config'
-
-const baseFieldsConfig = {
+const API_BASE = 'http://localhost:8000/api'
+const baseFields = {
   CAR: ['BRAND', 'MODEL', 'YEAR', 'VIN', 'PRICE', 'CONDITION'],
-  PERSON: ['NAME', 'SURNAME', 'CAR', 'AMOUNT', 'TERM' ,'APR']
+  PERSON: ['NAME', 'SURNAME', 'CAR', 'AMOUNT', 'TERM', 'APR']
 }
 
-// --- State ---
 const fields = ref([])
 const records = ref([])
 const tempFiles = ref([])
 const fileInput = ref(null)
 const editingId = ref(null)
-
 const showModal = ref(false)
 const activeRecord = ref(null)
 
-// --- Computed ---
-
-// Заголовки таблицы: добавляем расчетные поля только для PERSON
 const tableHeaders = computed(() => {
   const base = fields.value.map(f => f.k)
-  if (current_type.value === 'PERSON') {
-    return [...base, 'MONTHLY', 'PROFIT']
-  }
-  return base
+  return current_type.value === 'PERSON' ? [...base, 'MONTHLY', 'PROFIT'] : base
 })
 
-const availableCars = computed(() => {
-  const cars = records.value.filter(r => r.__recordType === 'CAR')
-  if (cars.length === 0) return []
-  return cars.map(r => {
-    const brand = r.BRAND || ''
-    const model = r.MODEL || ''
-    const year = r.YEAR ? ` (${r.YEAR})` : ''
-    const label = `${brand} ${model}`.trim()
-    return label ? `${label}${year}` : 'UNKNOWN CAR'
-  })
-})
-
-// --- Calculation Logic ---
+const availableCars = computed(() => records.value
+  .filter(r => r.__recordType === 'CAR')
+  .map(r => `${r.BRAND || ''} ${r.MODEL || ''} ${r.YEAR ? `(${r.YEAR})` : ''}`.trim() || 'UNKNOWN CAR')
+)
 
 const calculateMonthly = (r) => {
-  const amount = parseFloat(r.AMOUNT) || 0
-  const term = parseFloat(r.TERM) || 0
-  const apr = parseFloat(r.APR) || 0 // Исправлено с PERCENT на APR
-  if (amount > 0 && term > 0) {
-    const total = amount + (amount * (apr / 100))
-    return (total / term).toFixed(2)
-  }
-  return '0.00'
+  const a = parseFloat(r.AMOUNT) || 0, t = parseFloat(r.TERM) || 0, p = parseFloat(r.APR) || 0
+  return (a > 0 && t > 0) ? ((a + (a * p / 100)) / t).toFixed(2) : '0.00'
 }
 
 const calculateProfit = (r) => {
-  const amount = parseFloat(r.AMOUNT) || 0
-  const apr = parseFloat(r.APR) || 0 // Исправлено с PERCENT на APR
-  if (amount > 0 && apr > 0) {
-    return (amount * (apr / 100)).toFixed(2)
-  }
-  return '0.00'
+  const a = parseFloat(r.AMOUNT) || 0, p = parseFloat(r.APR) || 0
+  return (a * p / 100).toFixed(2)
 }
 
-// --- API Logic (Конфигурация полей) ---
+const api = (path, opt = {}) => fetch(`${API_BASE}${path}`, { credentials: 'include', ...opt })
 
 const loadFieldsConfig = async () => {
-  try {
-    const res = await fetch(`${CFG_URL}/${current_type.value}`, { credentials: 'include' })
-    const customKeys = res.ok ? await res.json() : []
-    
-    const base = baseFieldsConfig[current_type.value] || []
-    const baseFields = base.map(f => ({ k: f, v: '', isBase: true }))
-    const customFields = customKeys.map(f => ({ k: f, v: '', isBase: false }))
-    
-    fields.value = [...baseFields, ...customFields]
-  } catch (err) {
-    console.error('Config Load Error:', err)
-  }
+  const res = await api(`/get_config/${current_type.value}`)
+  const custom = res.ok ? await res.json() : []
+  const base = baseFields[current_type.value] || []
+  fields.value = [
+    ...base.map(k => ({ k, v: '', isBase: true })),
+    ...custom.map(k => ({ k, v: '', isBase: false }))
+  ]
 }
 
-const syncConfigWithDB = async () => {
-  const customKeys = fields.value.filter(f => !f.isBase).map(f => f.k)
-  try {
-    await fetch(`${CFG_URL}/${current_type.value}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(customKeys),
-      credentials: 'include'
-    })
-  } catch (err) {
-    console.error('Config Save Error:', err)
-  }
+const syncConfigWithDB = () => {
+  api(`/update_config/${current_type.value}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(fields.value.filter(f => !f.isBase).map(f => f.k))
+  })
 }
-
-const onKeyChange = () => {
-  syncConfigWithDB()
-}
-
-// --- API Logic (Записи) ---
 
 const loadRecords = async () => {
-  try {
-    const res = await fetch(API_URL, { credentials: 'include' })
-    if (res.ok) records.value = await res.json()
-  } catch (err) {
-    console.error('DB Error:', err)
-  }
+  const res = await api('/records')
+  if (res.ok) records.value = await res.json()
 }
-
-const deleteRecord = async (id) => {
-  try {
-    await fetch(`${API_URL}/${id}`, { 
-      method: 'DELETE', 
-      credentials: 'include' 
-    })
-    await loadRecords()
-  } catch (err) {
-    console.error('Delete Error:', err)
-  }
-}
-
-const saveRecord = async () => {
-  const payload = {
-    __recordType: current_type.value,
-    files: [...tempFiles.value]
-  }
-  fields.value.forEach(f => { payload[f.k] = f.v })
-
-  const method = editingId.value ? 'PUT' : 'POST'
-  const url = editingId.value ? `${API_URL}/${editingId.value}` : API_URL
-
-  try {
-    const res = await fetch(url, {
-      method: method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-      credentials: 'include'
-    })
-    
-    if (res.ok) {
-      editingId.value = null
-      tempFiles.value = []
-      await loadFieldsConfig() 
-      await loadRecords()
-    }
-  } catch (err) {
-    console.error('Save Error:', err)
-  }
-}
-
-// --- UI Logic ---
 
 const addCustomField = async () => {
   fields.value.push({ k: 'NEW_FIELD', v: '', isBase: false })
-  await syncConfigWithDB()
+  syncConfigWithDB()
 }
 
 const removeField = async (index) => {
   if (!fields.value[index].isBase) {
     fields.value.splice(index, 1)
-    await syncConfigWithDB()
+    syncConfigWithDB()
   }
 }
 
-const editRecord = (record) => {
-  editingId.value = record.id
-  tempFiles.value = [...record.files]
-  fields.value.forEach(f => {
-    f.v = record[f.k] || ''
+const saveRecord = async () => {
+  const payload = { __recordType: current_type.value, files: [...tempFiles.value] }
+  fields.value.forEach(f => { payload[f.k] = f.v })
+
+  const res = await api(editingId.value ? `/records/${editingId.value}` : '/records', {
+    method: editingId.value ? 'PUT' : 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
   })
+
+  if (res.ok) {
+    editingId.value = null
+    tempFiles.value = []
+    fields.value.forEach(f => f.v = '')
+    loadRecords()
+  }
 }
 
-// --- Files ---
+const deleteRecord = async (id) => {
+  await api(`/records/${id}`, { method: 'DELETE' })
+  loadRecords()
+}
+
+const editRecord = (r) => {
+  editingId.value = r.id
+  tempFiles.value = [...(r.files || [])]
+  fields.value.forEach(f => { f.v = r[f.k] || '' })
+}
 
 const triggerFiles = () => fileInput.value.click()
 
-const processFiles = (event) => {
-  const selectedFiles = Array.from(event.target.files)
-  selectedFiles.forEach(file => {
+const processFiles = (e) => {
+  const files = Array.from(e.target.files)
+  files.forEach(file => {
     const reader = new FileReader()
-    reader.onload = (e) => {
+    reader.onload = (ev) => {
       tempFiles.value.push({
         name: file.name,
         type: file.type,
-        data: e.target.result
+        data: ev.target.result
       })
     }
     reader.readAsDataURL(file)
   })
-  event.target.value = ''
+  e.target.value = ''
 }
 
-const openFile = (file) => {
-  const base64Data = file.data.split(',')[1]
-  const byteCharacters = atob(base64Data)
-  const byteNumbers = new Array(byteCharacters.length)
-  for (let i = 0; i < byteCharacters.length; i++) {
-    byteNumbers[i] = byteCharacters.charCodeAt(i)
-  }
-  const byteArray = new Uint8Array(byteNumbers)
-  const blob = new Blob([byteArray], { type: file.type })
-  const fileURL = URL.createObjectURL(blob)
-  window.open(fileURL, '_blank')
+const openFile = (f) => {
+  const arr = f.data.split(','), mime = arr[0].match(/:(.*?);/)[1], bstr = atob(arr[1])
+  let n = bstr.length, u8arr = new Uint8Array(n)
+  while(n--) u8arr[n] = bstr.charCodeAt(n)
+  window.open(URL.createObjectURL(new Blob([u8arr], {type:mime})), '_blank')
 }
 
+watch(current_type, loadFieldsConfig, { immediate: true })
 onMounted(loadRecords)
-
-watch(current_type, async () => {
-  await loadFieldsConfig()
-}, { immediate: true })
-
 </script>
 
 <template>
