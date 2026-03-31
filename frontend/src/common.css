@@ -24,8 +24,8 @@ body, html {
 }
 
 .bordered {
-    border: 2px solid var(--cyan);
-    box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+    border: 2px solid var(--cyan) !important;
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.2) !important;
 }
 
 .button {
@@ -40,6 +40,8 @@ body, html {
 }
 
 .frame {
+    display: flex;
+    flex-direction: column;
     padding: 25px;
     overflow: auto; 
     position: relative;

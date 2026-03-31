@@ -1,34 +1,34 @@
 <script setup>
 
 import { onMounted } from 'vue'
-import { isAuthenticated, isInitializing } from './state.js' 
+import { isAuthenticated, isInitializing, userGroup } from './state.js' 
 import Header from "./components/Header.vue";
 import CRM from "./components/CRM.vue";
 import Login from "./components/Login.vue";
+import Elite from './components/Elite.vue';
+
+const getSession = async () => {
+  while (true) {
+    try {
+      const response = await fetch('http://localhost:8000/api/get_session', { 
+        credentials: 'include' 
+      });
+      const data = await response.json();
+      isAuthenticated.value = data.isAuthenticated;
+      userGroup.value = data.group
+
+      break; 
+    } catch (e) {
+      await new Promise(resolve => setTimeout(resolve, 5000));
+    }
+  }
+}
 
 onMounted(async () => {
-  const timer = new Promise(resolve => setTimeout(resolve, 5000))
-  
-  const authCheck = fetch('http://localhost:8000/api/get_session', { 
-    credentials: 'include' 
-  }).catch(err => err)
-
-  const [res] = await Promise.all([authCheck, timer])
-  
-  if (res && res.status === 200) {
-    isAuthenticated.value = true
-  }
-
-  isInitializing.value = false
-})
-
-const onLoginSuccess = () => {
-  isAuthenticated.value = true
-}
-
-const onLogout = () => {
-  isAuthenticated.value = false
-}
+  const timer = new Promise(resolve => setTimeout(resolve, 5000));
+  await Promise.all([getSession(), timer]);
+  isInitializing.value = false;
+});
 
 </script>
 
@@ -45,11 +45,18 @@ const onLogout = () => {
 
     <template v-else>
       <template v-if="isAuthenticated">
-        <Header @logout="onLogout" />
-        <CRM />
+        <Header @logout="isAuthenticated = false" />
+
+        <template v-if="userGroup === 'admin'">
+            <CRM />
+          </template>
+          
+          <template v-else-if="userGroup === 'developer'">
+            <Elite/>
+          </template>
       </template>
       
-      <Login v-else @login-success="onLoginSuccess" />
+      <Login v-else @login-success="getSession" />
     </template>
 
   </div>
@@ -57,11 +64,10 @@ const onLogout = () => {
 
 <style scoped>
 
-
 .init-screen {
-    position: fixed;
+    position: absolute;
     top: 0; left: 0;
-    width: 100vw; height: 100vh;
+    width: 100%; height: 100%;
     background: #000;
     display: flex;
     align-items: center;
@@ -98,4 +104,5 @@ const onLogout = () => {
     0%, 100% { transform: scaleX(0.1); opacity: 0.2; }
     50% { transform: scaleX(1); opacity: 1; }
 }
+
 </style>

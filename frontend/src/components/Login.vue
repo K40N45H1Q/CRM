@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 
 const emit = defineEmits(['login-success'])
 
@@ -8,32 +8,9 @@ const password = ref('')
 const message = ref('')
 const isNotifyVisible = ref(false)
 const isLoading = ref(false)
-const isInitializing = ref(true)
 
-let isAuthChecked = false
-
-onMounted(async () => {
-  if (isAuthChecked) {
-    isInitializing.value = false
-    return
-  }
-  
-  isAuthChecked = true
-
-  try {
-    const response = await fetch('http://localhost:8000/api/get_session', { 
-      credentials: 'include' 
-    })
-    
-    if (response.ok) {
-      emit('login-success')
-    }
-  } catch (e) {
-    console.error(e)
-  } finally {
-    isInitializing.value = false
-  }
-})
+// Функции инициализации здесь больше не нужны, 
+// так как App.vue уже все проверил до монтирования этого компонента.
 
 const showNotify = (msg) => {
   message.value = msg
@@ -66,6 +43,7 @@ const handleLogin = async () => {
 
     if (response.ok) {
       showNotify("SUCCESS!")
+      // Небольшая задержка, чтобы юзер успел увидеть надпись SUCCESS
       setTimeout(() => emit('login-success'), 600)
     } else {
       showNotify("ACCESS DENIED!")
@@ -84,11 +62,7 @@ const handleLogin = async () => {
   <div class="viewport-fix" :style="{ '--cyan': '#00ffff', '--h': '40px' }">
     <div class="bordered page-container">
       
-      <div v-if="isInitializing" class="init-overlay">
-         <div class="loader-text">INITIALIZING...</div>
-      </div>
-
-      <div v-else class="login-wrapper">
+      <div class="login-wrapper">
         <div class="notify" :class="{ visible: isNotifyVisible }">
           <h1>{{ message }}</h1>
         </div>

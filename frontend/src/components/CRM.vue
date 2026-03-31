@@ -1,12 +1,8 @@
 <script setup>
 import { ref, watch, computed, onMounted } from 'vue'
-import { current_type } from '../state.js'
+import { currentType, baseFields } from '../state.js'
 
 const API_BASE = 'http://localhost:8000/api'
-const baseFields = {
-  CAR: ['BRAND', 'MODEL', 'YEAR', 'VIN', 'PRICE', 'CONDITION'],
-  PERSON: ['NAME', 'SURNAME', 'CAR', 'AMOUNT', 'TERM', 'APR']
-}
 
 const fields = ref([])
 const records = ref([])
@@ -18,7 +14,7 @@ const activeRecord = ref(null)
 
 const tableHeaders = computed(() => {
   const base = fields.value.map(f => f.k)
-  return current_type.value === 'PERSON' ? [...base, 'MONTHLY', 'PROFIT'] : base
+  return currentType.value === 'PERSON' ? [...base, 'MONTHLY', 'PROFIT'] : base
 })
 
 const availableCars = computed(() => records.value
@@ -39,9 +35,9 @@ const calculateProfit = (r) => {
 const api = (path, opt = {}) => fetch(`${API_BASE}${path}`, { credentials: 'include', ...opt })
 
 const loadFieldsConfig = async () => {
-  const res = await api(`/get_config/${current_type.value}`)
+  const res = await api(`/get_config/${currentType.value}`)
   const custom = res.ok ? await res.json() : []
-  const base = baseFields[current_type.value] || []
+  const base = baseFields[currentType.value] || []
   fields.value = [
     ...base.map(k => ({ k, v: '', isBase: true })),
     ...custom.map(k => ({ k, v: '', isBase: false }))
@@ -49,7 +45,7 @@ const loadFieldsConfig = async () => {
 }
 
 const syncConfigWithDB = () => {
-  api(`/update_config/${current_type.value}`, {
+  api(`/update_config/${currentType.value}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(fields.value.filter(f => !f.isBase).map(f => f.k))
@@ -74,7 +70,7 @@ const removeField = async (index) => {
 }
 
 const saveRecord = async () => {
-  const payload = { __recordType: current_type.value, files: [...tempFiles.value] }
+  const payload = { __recordType: currentType.value, files: [...tempFiles.value] }
   fields.value.forEach(f => { payload[f.k] = f.v })
 
   const res = await api(editingId.value ? `/records/${editingId.value}` : '/records', {
@@ -127,7 +123,7 @@ const openFile = (f) => {
   window.open(URL.createObjectURL(new Blob([u8arr], {type:mime})), '_blank')
 }
 
-watch(current_type, loadFieldsConfig, { immediate: true })
+watch(currentType, loadFieldsConfig, { immediate: true })
 onMounted(loadRecords)
 </script>
 
@@ -144,7 +140,7 @@ onMounted(loadRecords)
         <div class="form-group">
           <label>VALUE</label>
           
-          <template v-if="current_type === 'PERSON' && field.k === 'CAR'">
+          <template v-if="currentType === 'PERSON' && field.k === 'CAR'">
             <div class="dropdown">
               <button class="type-btn" type="button">
                 {{ field.v || (availableCars.length ? 'CHOOSE CAR...' : 'NO CARS') }}
@@ -192,7 +188,7 @@ onMounted(loadRecords)
         </thead>
         <tbody>
           <tr v-for="r in records" :key="r.id">
-            <template v-if="r.__recordType === current_type">
+            <template v-if="r.__recordType === currentType">
               <td v-for="header in tableHeaders" :key="header">
                 
                 <template v-if="header === 'MONTHLY'">

@@ -6,18 +6,17 @@ from sqlalchemy import select
 
 from src.orm.database import async_session
 from src.orm.models import FieldConfig, Record
-from src.utils import COOKIE_KEY, defend, verify_password
+from src.utils import COOKIE_KEY, defend, create_session
 
 router = APIRouter()
 
-# --- АВТОРИЗАЦИЯ ---
 
 @router.post("/api/login")
 async def login(data: Dict[str, str], response: Response):
     username = data.get("username")
     password = data.get("password")
 
-    session = await verify_password(username, password)
+    session = await create_session(username, password)
 
     if session:
         response.set_cookie(key=COOKIE_KEY, value=session)
@@ -28,10 +27,17 @@ async def login(data: Dict[str, str], response: Response):
 
 
 @router.get("/api/get_session")
-def verify_session(response=Depends(defend)):
-    if isinstance(response, Response) or response is None:
-        return Response(status_code=401)
-    return Response(status_code=200)
+def verify_session(response = Depends(defend)):
+    if isinstance(response, Response):
+        return {
+            "group": None,
+            "isAuthenticated": False
+        }
+    
+    return {
+        "isAuthenticated": True,
+        "group": response.get("group")
+    }
 
 
 @router.post("/api/logout")
@@ -40,8 +46,6 @@ def logout(response: Response):
     response.status_code = 200
     return response
 
-
-# --- КОНФИГУРАЦИЯ ПОЛЕЙ ---
 
 @router.get("/api/get_config/{record_type}")
 async def get_config(record_type: str, response=Depends(defend)):
@@ -68,8 +72,6 @@ async def update_config(record_type: str, keys: List[str], response=Depends(defe
         await session.commit()
         return {"status": "ok"}
 
-
-# --- ЗАПИСИ (RECORDS) ---
 
 @router.get("/api/records")
 async def get_records(response=Depends(defend)):

@@ -1,5 +1,5 @@
 <script setup>
-import { current_type, isAuthenticated } from "../state.js"
+import { currentType, isAuthenticated, userGroup } from "../state.js"
 const emit = defineEmits(['logout'])
 const logout = async () => {
   try {
@@ -22,10 +22,10 @@ const logout = async () => {
     
     <div class="actions">
       <div class="dropdown">
-        <button class="type button">{{ current_type }}</button>
+        <button v-if="userGroup === 'admin'" class="type button">{{ currentType }}</button>
         <ul class="bordered">
-          <li @click="current_type = 'CAR'">CAR</li>
-          <li @click="current_type = 'PERSON'">PERSON</li>
+          <li @click="currentType = 'CAR'">CAR</li>
+          <li @click="currentType = 'PERSON'">PERSON</li>
         </ul>
       </div>
       <button class="logout button" @click="logout">LOGOUT</button>
@@ -35,6 +35,7 @@ const logout = async () => {
 
 <style scoped>
 header {
+  height: 50px;
   display: flex;
   align-items: center;
   justify-content: space-between;

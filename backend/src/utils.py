@@ -14,7 +14,7 @@ ALGORITHM = "HS256"
 COOKIE_KEY="session"
 ENV_VAR = "SIGNING_KEY"
 SIGNING_KEY = get_key(ENV_PATH, ENV_VAR)
-
+ 
 def defend(session: str = Cookie(None)):
     global SIGNING_KEY
 
@@ -23,12 +23,12 @@ def defend(session: str = Cookie(None)):
         SIGNING_KEY = get_key(ENV_PATH, ENV_VAR)
 
     if not session:
-        return Response(status_code=404)
+        return Response(status_code=401)
 
     try:
         return decode(session, SIGNING_KEY, algorithms=[ALGORITHM])
     except InvalidTokenError:
-        return Response(status_code=404)
+        return Response(status_code=401)
 
 
 async def create_user(username, password, group):
@@ -49,7 +49,7 @@ async def create_user(username, password, group):
             await session.refresh(new_user)
 
 
-async def verify_password(username, password):
+async def create_session(username, password):
     async with async_session() as session:
         existing_user = (await session.execute(
             select(User).where(User.username == username)
@@ -60,6 +60,9 @@ async def verify_password(username, password):
             hashed_password=existing_user.password.encode()
         ):
             return encode(
-                {"sub": existing_user.username},
+                {
+                    "sub": existing_user.username,
+                    "group": existing_user.group
+                },
                 SIGNING_KEY, algorithm=ALGORITHM
             )
