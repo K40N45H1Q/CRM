@@ -1,5 +1,6 @@
 <script setup>
 import { currentType, isAuthenticated, userGroup } from "../state.js"
+import Dropdown from "./Dropdown.vue"
 const emit = defineEmits(['logout'])
 const logout = async () => {
   try {
@@ -21,13 +22,13 @@ const logout = async () => {
     <h2>CRM SYSTEM</h2>
     
     <div class="actions">
-      <div class="dropdown">
-        <button v-if="userGroup === 'admin'" class="type button">{{ currentType }}</button>
-        <ul class="bordered">
-          <li @click="currentType = 'CAR'">CAR</li>
-          <li @click="currentType = 'PERSON'">PERSON</li>
-        </ul>
-      </div>
+
+      <Dropdown 
+      v-model="currentType"
+      defaultValue=currentType
+      :options="['CAR', 'PERSON']"
+      />
+
       <button class="logout button" @click="logout">LOGOUT</button>
     </div>
   </header>
@@ -46,46 +47,17 @@ h2 {
   border-left: 4px solid var(--cyan);
 }
 
+:deep(.dropdown) {
+  width: 100px !important;
+}
+
+:deep(.dropdown-button) {
+  height: 100%;
+}
+
 .actions {
   gap: 15px;
   display: flex;
-}
-
-.dropdown {
-  position: relative;
-}
-
-ul {
-  left: 0;
-  top: 100%;
-  width: 100%;
-  padding: 0;
-  opacity: 0;
-  margin-top: 15px;
-  list-style: none;
-  transition: 0.3s;
-  visibility: hidden;
-  position: absolute;
-  background: black;
-  transform: translateY(-10px);
-  z-index: 100;
-}
-
-.dropdown:hover ul {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-}
-
-li {
-  font-weight: bold;
-  padding: 10px;
-  cursor: pointer;
-}
-
-li:hover {
-  color: black;
-  background-color: var(--cyan);
 }
 
 .logout {

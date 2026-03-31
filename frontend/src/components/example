@@ -1,0 +1,118 @@
+<script setup>
+import { ref, defineProps, defineEmits, onMounted, onBeforeUnmount } from 'vue'
+
+const props = defineProps({
+  options: Array,
+  modelValue: [String, Number, Object]
+})
+
+const emit = defineEmits(['update:modelValue'])
+
+const open = ref(false)
+const root = ref(null)
+
+const toggle = () => (open.value = !open.value)
+const select = (o) => (emit('update:modelValue', o), open.value = false)
+
+const label = () =>
+  props.modelValue == null
+    ? 'Выберите вариант'
+    : typeof props.modelValue === 'object'
+      ? props.modelValue.label
+      : props.modelValue
+
+const outside = (e) => !root.value?.contains(e.target) && (open.value = false)
+
+onMounted(() => document.addEventListener('click', outside))
+onBeforeUnmount(() => document.removeEventListener('click', outside))
+</script>
+
+<template>
+  <div class="dropdown" ref="root">
+    <button @click="toggle" class="bordered dropdown-button">
+      {{ label() }}
+      <span class="arrow" :class="{ open }">▼</span>
+    </button>
+
+    <ul class="dropdown-menu" :class="{ open }">
+      <li
+        v-for="(o, i) in props.options"
+        :key="i"
+        @click="select(o)"
+        :class="{ selected: o === props.modelValue }"
+      >
+        {{ typeof o === 'object' ? o.label : o }}
+      </li>
+    </ul>
+  </div>
+</template>
+
+<style scoped>
+.dropdown {
+  position: relative;
+  width: 200px;
+  font-family: sans-serif;
+}
+
+.dropdown-button {
+  width: 100%;
+  padding: 10px;
+  background: black;
+  color: white;
+  border: 1px solid white;
+  cursor: pointer;
+  font-weight: bold;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: .3s;
+}
+
+.dropdown-button:hover {
+  background: var(--cyan);
+  color: black;
+}
+
+.arrow {
+  transition: .3s;
+}
+
+.arrow.open {
+  transform: rotate(180deg);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  padding: 0;
+  margin-top: 15px;
+  list-style: none;
+  background: black;
+  border: 1px solid white;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: .3s;
+  z-index: 100;
+}
+
+.dropdown-menu.open {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.dropdown-menu li {
+  padding: 10px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: .2s;
+}
+
+.dropdown-menu li:hover {
+  background: var(--cyan);
+  color: black;
+}
+</style>
