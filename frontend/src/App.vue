@@ -5,7 +5,7 @@ import { isAuthenticated, isInitializing, userGroup } from './state.js'
 import Header from "./components/Header.vue";
 import CRM from "./components/CRM.vue";
 import Login from "./components/Login.vue";
-import Elite from './components/Elite.vue';
+import Sandbox from './components/Sandbox.vue';
 
 const getSession = async () => {
   while (true) {
@@ -52,7 +52,7 @@ onMounted(async () => {
           </template>
           
           <template v-else-if="userGroup === 'developer'">
-            <Elite/>
+            <Sandbox/>
           </template>
       </template>
       

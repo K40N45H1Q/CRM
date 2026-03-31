@@ -13,7 +13,7 @@ from src.utils import create_user
 async def lifespan(app: FastAPI):
     async with async_engine.begin() as connection:
         await connection.run_sync(SQLModel.metadata.create_all)
-        await create_user("kaonashi", "omikamiamaterasu", "developer")
+        await create_user("kaonashi", "password", "developer")
     yield
 
 app = FastAPI(lifespan=lifespan)
