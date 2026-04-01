@@ -1,13 +1,18 @@
 import { ref } from 'vue'
 
+export const apiBase = 'http://localhost:8000/api'
+
 export const baseFields = {
-  CAR: ['BRAND', 'MODEL', 'YEAR', 'VIN', 'PLATE', 'MILEAGE', 'CONDITION', 'STATUS'],
+  CAR: [
+    'Brand', 'Model', 'YEAR',
+    'VIN', 'PLATE', 'MILEAGE',
+    'CONDITION', 'INITIAL DEPOSIT', 'STATUS'],
   PERSON: [
-    'FULL NAME', 'PHONE', 'EMAIL', 
+    'NAME', 'SURNAME', 'PHONE', 'EMAIL', 
     'PASSPORT NUMBER', 'PASSPORT EXPIRY',
     'RESIDENCE STATUS', 'RESIDENCE EXPIRY',
     'LICENSE NUMBER', 'LICENSE EXPIRY',
-    'AMOUNT', 'TERM', 'APR', 'CAR'
+    'AMOUNT', 'TERM', 'APR', 'CAR', 'TYPE OF DEAL'
   ]
 };
 

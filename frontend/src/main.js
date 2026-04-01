@@ -1,5 +1,5 @@
 import { createApp } from 'vue'
 import App from './App.vue'
-import "./common.css"
+import Fields from './components/Fields.vue'
 
-createApp(App).mount('#app')
+createApp(Fields).mount('#app')

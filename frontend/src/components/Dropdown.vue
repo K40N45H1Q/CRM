@@ -3,7 +3,7 @@ import { ref, computed, defineProps, defineEmits } from 'vue'
 
 const props = defineProps({
   options: Array,
-  modelValue: String   // ← вместо defaultValue
+  modelValue: String
 })
 
 const emit = defineEmits(['update:modelValue'])
@@ -15,7 +15,7 @@ const toggle = () => open.value = !open.value
 
 const select = (o) => {
   selected.value = o
-  emit('update:modelValue', o)   // ← отправляем новое значение наружу
+  emit('update:modelValue', o)
   open.value = false
 }
 
