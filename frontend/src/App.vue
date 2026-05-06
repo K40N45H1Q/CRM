@@ -1,17 +1,31 @@
 <template>
-  <div class="app-container">
-    <header class="top-bar">
-      <h1>CRM</h1>
-      <div class="controls">
-        <input v-model="searchQuery" placeholder="Поиск по таблице..." class="search-input"/>
-        <select v-model="currentTable" @change="loadTableData">
-          <option value="users">Пользователи</option>
-          <option value="cars">Машины</option>
-        </select>
-        <button @click="openAddForm">Добавить запись</button>
-        <button @click="isSettingsModalVisible = true">Настройки</button>
+  <div>
+    <div v-if="!isLoggedIn" class="login-screen">
+      <div class="login-card">
+        <h1>Вход</h1>
+        <input v-model="username" placeholder="Имя пользователя" class="login-input" />
+        <input v-model="password" type="password" placeholder="Пароль" class="login-input" />
+        <button class="login-button" @click="login" :disabled="loginInProgress">
+          {{ loginInProgress ? "Вход…" : "Войти" }}
+        </button>
+        <div v-if="authError" class="error-message">{{ authError }}</div>
       </div>
-    </header>
+    </div>
+
+    <div v-else class="app-container">
+      <header class="top-bar">
+        <h1>CRM</h1>
+        <div class="controls">
+          <input v-model="searchQuery" placeholder="Поиск по таблице..." class="search-input"/>
+          <select v-model="currentTable" @change="loadTableData">
+            <option value="users">Пользователи</option>
+            <option value="cars">Машины</option>
+          </select>
+          <button @click="openAddForm">Добавить запись</button>
+          <button @click="isSettingsModalVisible = true">Настройки</button>
+          <button class="logout-button" @click="logout">Выйти</button>
+        </div>
+      </header>
 
     <TabulatorTable
       :data="tableData"
@@ -53,6 +67,7 @@
       <div class="modal"><FilesModal :ownerType="filesOwnerType" :ownerId="filesOwnerId" @close="closeFilesModal" /></div>
     </div>
   </div>
+</div>
 </template>
 
 <script>
@@ -115,6 +130,13 @@ export default {
       const cols = currentTable.value === "users" ? visibleColumnsUsers.value : visibleColumnsCars.value;
       return (cols || []).filter(f => f && !SENSITIVE_FIELDS.includes(f));
     });
+
+    // ✅ СОСТОЯНИЕ АВТОРИЗАЦИИ
+    const isLoggedIn = ref(Boolean(localStorage.getItem("authToken")));
+    const username = ref("");
+    const password = ref("");
+    const authError = ref("");
+    const loginInProgress = ref(false);
 
     /**
      * ✅ Загрузить настройки компании из сервера
@@ -183,6 +205,41 @@ export default {
       await loadDbFields();
       await loadCars();
       await loadTableData();
+    }
+
+    async function login() {
+      authError.value = "";
+      loginInProgress.value = true;
+
+      try {
+        const r = await api.login(username.value, password.value);
+        localStorage.setItem("authToken", r.access_token);
+        isLoggedIn.value = true;
+        username.value = "";
+        password.value = "";
+        await loadAll();
+      } catch (e) {
+        authError.value = e.message || "Ошибка входа";
+      } finally {
+        loginInProgress.value = false;
+      }
+    }
+
+    async function logout() {
+      try {
+        await api.logout();
+      } catch (e) {
+        console.warn("Logout failed:", e);
+      }
+      localStorage.removeItem("authToken");
+      isLoggedIn.value = false;
+      tableData.value = [];
+      cars.value = [];
+      freeCars.value = [];
+      settings.value = {};
+      visibleColumnsUsers.value = [];
+      visibleColumnsCars.value = [];
+      columnLabelsFromServer.value = {};
     }
 
     /**
@@ -275,14 +332,24 @@ export default {
     }
 
     // ✅ При монтировании компонента загружаем все данные
-    onMounted(loadAll);
+    onMounted(async () => {
+      if (isLoggedIn.value) {
+        try {
+          await api.checkAuth();
+          await loadAll();
+        } catch (e) {
+          logout();
+        }
+      }
+    });
 
     return {
       currentTable, tableData, cars, freeCars, dbFields, settings,
       visibleColumnsUsers, visibleColumnsCars, columnLabelsEffective, visibleColumnsEffective,
       searchQuery, isSettingsModalVisible, isFormVisible, editingModel, currentFormComponent,
       isFilesModalVisible, filesOwnerType, filesOwnerId, loadTableData, openAddForm, closeForm,
-      onEditRow, onDeleteRow, onOpenFiles, closeFilesModal, onFormSaved, onSettingsSaved
+      onEditRow, onDeleteRow, onOpenFiles, closeFilesModal, onFormSaved, onSettingsSaved,
+      isLoggedIn, username, password, authError, loginInProgress, login, logout
     };
   }
 };
@@ -305,12 +372,12 @@ html, body, #app {
   display: flex;
   align-items: center;      /* вертикаль */
   justify-content: center;  /* горизонталь */
-  background: #f9fafb;
+  background: #000;
 }
 
 /* ✅ Сам контейнер */
 .app-container {
-  width: 100%;
+  width: 1800px;
   height: 100%;
   padding: 20px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -370,6 +437,62 @@ html, body, #app {
 
 .controls button:hover {
   background: #2563eb;
+}
+
+.login-screen {
+  min-height: 100vh;
+  width: 800px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+}
+
+.login-card {
+  width: min(420px, 100%);
+  padding: 30px;
+  border: 1px solid #00ffff;
+  border-radius: 16px;
+  background: #0a1222;
+  box-shadow: 0 20px 60px rgba(0, 255, 255, 0.15);
+  text-align: center;
+}
+
+.login-card h1 {
+  margin-bottom: 20px;
+  color: #00ffff;
+}
+
+.login-input {
+  width: 100%;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #0a8bff;
+  background: #020611;
+  color: #fff;
+}
+
+.login-button,
+.logout-button {
+  padding: 10px 18px;
+  border-radius: 12px;
+  border: 1px solid #00ffff;
+  background: #0b1224;
+  color: #00ffff;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.login-button:hover,
+.logout-button:hover {
+  background: #00ffff;
+  color: #000;
+}
+
+.error-message {
+  margin-top: 12px;
+  color: #ff6b6b;
 }
 
 /* ✅ Модальные окна */
@@ -435,6 +558,19 @@ button {
 button:hover {
   background-color: #00FFFF !important;
   color: #000 !important;
+}
+
+.settings-modal {
+  overflow: hidden !important;
+}
+
+button {
+  cursor: pointer;
+  height: 100% !important;
+}
+
+.tabulator-tableholder {
+  background-color: #000 !important;
 }
 
 </style>

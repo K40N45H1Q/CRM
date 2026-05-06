@@ -1,13 +1,14 @@
 """Роутер для настроек компании и плейсхолдеров шаблонов."""
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from typing import Dict, Any
 
+from ..auth import get_current_user
 from ..db import db
 from ..models import SettingsModel
 from ..utils import ensure_settings, serialize
 
-router = APIRouter(prefix="/company-lease-settings", tags=["settings"])
+router = APIRouter(prefix="/company-lease-settings", tags=["settings"], dependencies=[Depends(get_current_user)])
 
 
 @router.get("", response_model=Dict[str, Any])

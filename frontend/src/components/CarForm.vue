@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="car-form">
     <!-- ✅ Заголовок формы -->
     <h2>{{ isEditMode ? "🔄 Редактировать машину" : "➕ Добавить машину" }}</h2>
 
@@ -112,3 +112,93 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.car-form {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 20px;
+  color: #1f2937;
+}
+
+.car-form h2 {
+  margin: 0 0 24px 0;
+  font-size: 20px;
+  font-weight: 600;
+  padding-bottom: 16px;
+}
+
+.form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.field input,
+.field select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  background: #fff;
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.field input:focus,
+.field select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 20px;
+}
+
+.save,
+.cancel {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.save {
+  background: #3b82f6;
+  color: white;
+}
+.save:hover { background: #2563eb; }
+
+.cancel {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+.cancel:hover { background: #e5e7eb; }
+
+@media (max-width: 768px) {
+  .car-form { padding: 12px; }
+  .save, .cancel { width: 100%; justify-content: center; }
+}
+</style>

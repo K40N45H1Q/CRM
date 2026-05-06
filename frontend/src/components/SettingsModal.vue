@@ -139,110 +139,108 @@ export default {
 </script>
 
 <style scoped>
-/* ✅ Основной контейнер модали */
 .settings-modal {
-  padding: 15px;
-  font-family: sans-serif;
+  padding: 22px;
   max-height: 85vh;
   overflow-y: auto;
+  color: #e2e8f0;
 }
 
-/* ✅ Стили для табов навигации */
 .tabs {
   display: flex;
-  gap: 8px;
-  margin-bottom: 15px;
+  gap: 10px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
 }
 
 .tabs button {
-  padding: 8px 16px;
-  background: none;
-  border: none;
+  padding: 10px 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(56, 189, 248, 0.18);
+  background: rgba(15, 23, 42, 0.9);
+  color: #cbd5e1;
   cursor: pointer;
-  opacity: 0.6;
-  transition: all 0.2s;
-  font-size: 14px;
+  transition: all 0.2s ease;
 }
 
 .tabs button:hover {
-  opacity: 0.8;
+  background: rgba(56, 189, 248, 0.14);
 }
 
 .tabs button.active {
-  opacity: 1;
-  border-bottom: 2px solid #00FFFF;
-  font-weight: bold;
-  color: #007BFF;
+  color: #ffffff;
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(34, 197, 94, 0.18));
+  border-color: rgba(56, 189, 248, 0.32);
 }
 
-/* ✅ Сетка для расположения элементов */
 .grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
 }
 
-/* ✅ Стили для полей ввода */
 .f label {
   display: block;
-  font-size: 12px;
-  color: #666;
-  margin-bottom: 4px;
-  font-weight: 500;
+  font-size: 0.9rem;
+  color: #94a3b8;
+  margin-bottom: 6px;
+  font-weight: 600;
 }
 
 .f input {
   width: 100%;
-  padding: 6px;
-  box-sizing: border-box;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 14px;
-  transition: border 0.2s;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(100, 116, 139, 0.2);
+  background: rgba(15, 23, 42, 0.92);
+  color: #e2e8f0;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .f input:focus {
   outline: none;
-  border-color: #007BFF;
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12);
 }
 
-/* ✅ Секция с колонками */
 .col-section {
   margin-bottom: 20px;
+  padding: 18px;
+  border-radius: 20px;
+  background: rgba(15, 23, 42, 0.92);
+  border: 1px solid rgba(56, 189, 248, 0.14);
 }
 
 .col-section h3 {
-  margin: 0 0 10px 0;
-  font-size: 16px;
-  color: #333;
-  font-weight: 600;
+  margin: 0 0 12px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #ffffff;
 }
 
-/* ✅ Список для выбора колонок */
 .cols-list {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  max-height: 250px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  max-height: 240px;
   overflow-y: auto;
-  padding-right: 5px;
+  padding-right: 4px;
 }
 
-/* ✅ Чекбокс с подписью */
 .chk {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
+  padding: 10px 12px;
+  border-radius: 14px;
   transition: background 0.2s;
-  user-select: none;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(148, 163, 184, 0.12);
 }
 
 .chk:hover {
-  background: #f5f5f5;
+  background: rgba(56, 189, 248, 0.12);
 }
 
 .chk input[type="checkbox"] {
@@ -251,67 +249,52 @@ export default {
   height: 16px;
 }
 
-/* ✅ Подсказка */
 .hint {
-  margin-top: 10px;
-  color: #666;
-  font-size: 13px;
-  line-height: 1.4;
+  margin-top: 12px;
+  color: #94a3b8;
+  font-size: 0.95rem;
+  line-height: 1.6;
 }
 
-/* ✅ Кнопки действия */
 .actions {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
-  margin-top: 20px;
-  padding-top: 15px;
+  gap: 12px;
+  margin-top: 22px;
 }
 
 .save,
 .cancel {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background 0.2s;
+  padding: 12px 18px;
+  border-radius: 14px;
+  border: 1px solid transparent;
+  font-weight: 700;
+  transition: all 0.2s ease;
 }
 
 .save {
-  background: #007BFF;
-  color: white;
+  background: linear-gradient(135deg, #38bdf8, #22c55e);
+  color: #020617;
 }
 
 .save:hover {
-  background: #0056b3;
+  filter: brightness(1.05);
 }
 
 .cancel {
-  background: #6c757d;
-  color: white;
+  background: rgba(148, 163, 184, 0.12);
+  color: #cbd5e1;
+  border-color: rgba(148, 163, 184, 0.2);
 }
 
 .cancel:hover {
-  background: #5a6268;
+  background: rgba(148, 163, 184, 0.2);
 }
 
-/* ✅ Скроллбар для списка колонок */
-.cols-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.cols-list::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
-}
-
-.cols-list::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 3px;
-}
-
-.cols-list::-webkit-scrollbar-thumb:hover {
-  background: #555;
+@media (max-width: 720px) {
+  .grid,
+  .cols-list {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

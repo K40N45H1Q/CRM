@@ -4,15 +4,16 @@ import calendar
 from datetime import datetime
 from typing import List
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
+from ..auth import get_current_user
 from ..db import db
 from ..models import UserModel
 from ..services.document_service import attach_contract_pdf_to_owners
 from ..services.lease_calculator import prepare_user_payload
 from ..utils import ensure_settings, serialize, to_object_id
 
-router = APIRouter(prefix="/users", tags=["users"])
+router = APIRouter(prefix="/users", tags=["users"], dependencies=[Depends(get_current_user)])
 
 
 @router.get("", response_model=List[dict])

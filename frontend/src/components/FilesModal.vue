@@ -55,9 +55,17 @@ export default {
       await api.uploadFile(formData);
       await loadFiles();
     };
-    const openFile = (file) => {
+    const openFile = async (file) => {
       const url = file.url.startsWith("http") ? file.url : `${API_BASE}${file.url}`;
-      window.open(`${url}?t=${Date.now()}`, "_blank");
+      const token = localStorage.getItem("authToken");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const res = await fetch(`${url}?t=${Date.now()}`, { headers });
+      if (!res.ok) {
+        throw new Error(`File open failed: ${res.status}`);
+      }
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      window.open(blobUrl, "_blank");
     };
     const removeFile = async (id) => { if (confirm("Удалить?")) { await api.deleteFile(id); await loadFiles(); } };
 

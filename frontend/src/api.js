@@ -14,8 +14,22 @@ const API_BASE = "http://localhost:8000";
  * @returns {Promise} - распарсенный JSON ответ или ошибка
  */
 async function request(path, options = {}) {
-  const res = await fetch(`${API_BASE}${path}`, options);
-  if (!res.ok) throw new Error(`API ${res.status}: ${await res.text()}`);
+  const token = localStorage.getItem("authToken");
+  const headers = { ...(options.headers || {}) };
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+
+  if (!res.ok) {
+    if (res.status === 401) {
+      localStorage.removeItem("authToken");
+    }
+    throw new Error(`API ${res.status}: ${await res.text()}`);
+  }
+
   return res.json();
 }
 
@@ -57,6 +71,18 @@ export const api = {
    * @param {string} id - ID пользователя
    */
   deleteUser: (id) => request(`/users/${id}`, { method: "DELETE" }),
+
+  // ✅ ===== АВТОРИЗАЦИЯ =====
+
+  login: (username, password) => request("/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password })
+  }),
+
+  logout: () => request("/logout", { method: "POST" }),
+
+  checkAuth: () => request("/auth-check"),
 
   // ✅ ===== МАШИНЫ =====
 
@@ -142,10 +168,18 @@ export const api = {
    * POST /upload
    * @param {FormData} formData - данные файла (ownerId, ownerType, file)
    */
-  uploadFile: (formData) => fetch(`${API_BASE}/upload`, {
-    method: "POST",
-    body: formData
-  }).then(async r => r.ok ? r.json() : Promise.reject(new Error(`Upload ${r.status}: ${await r.text()}`))),
+  uploadFile: (formData) => {
+    const token = localStorage.getItem("authToken");
+    const headers = {};
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+    return fetch(`${API_BASE}/upload`, {
+      method: "POST",
+      headers,
+      body: formData
+    }).then(async r => r.ok ? r.json() : Promise.reject(new Error(`Upload ${r.status}: ${await r.text()}`)));
+  },
 
   /**
    * Получить список файлов владельца

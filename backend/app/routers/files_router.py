@@ -12,14 +12,15 @@
 """
 
 import os
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 
+from ..auth import get_current_user
 from ..db import db
 from ..services.file_service import delete_file_record, save_upload_file
 from ..utils import serialize
 
-router = APIRouter(tags=["files"])
+router = APIRouter(tags=["files"], dependencies=[Depends(get_current_user)])
 
 # API-префикс (оригинальные маршруты)
 api_prefix = "/api"

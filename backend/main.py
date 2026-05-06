@@ -4,11 +4,13 @@
 import logging
 import uvicorn
 
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, Depends
 from fastapi.middleware.cors import CORSMiddleware
 
 # Абсолютные импорты — папка app должна находиться рядом с main.py
+from app.auth import get_current_user
 from app.routers import (
+    auth_router,
     cars_router,
     files_router,
     settings_router,
@@ -36,6 +38,7 @@ app.add_middleware(
 )
 
 # Регистрируем роутеры
+app.include_router(auth_router.router)
 app.include_router(settings_router.router)
 app.include_router(users_router.router)
 app.include_router(cars_router.router)
@@ -43,7 +46,7 @@ app.include_router(files_router.router)
 
 # Дублирующие корневые маршруты для совместимости с фронтендом,
 # который может запрашивать /db-fields, /upload, /files/... напрямую.
-root_router = APIRouter()
+root_router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 @root_router.get("/db-fields")

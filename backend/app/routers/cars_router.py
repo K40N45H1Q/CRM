@@ -2,13 +2,14 @@
 
 from typing import List
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
+from ..auth import get_current_user
 from ..db import db
 from ..models import CarModel
 from ..utils import serialize, to_object_id
 
-router = APIRouter(prefix="/cars", tags=["cars"])
+router = APIRouter(prefix="/cars", tags=["cars"], dependencies=[Depends(get_current_user)])
 
 
 @router.get("", response_model=List[dict])
