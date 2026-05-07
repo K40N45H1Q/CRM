@@ -8,7 +8,7 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 # MongoDB
 MONGO_URI = "mongodb://localhost:27017"
-DB_NAME = "l_data73"
+DB_NAME = "DATABASE"
 
 # Настройки по умолчанию для компании
 DEFAULT_SETTINGS = {

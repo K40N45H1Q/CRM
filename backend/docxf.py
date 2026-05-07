@@ -8,8 +8,7 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Pt
 
-# Настройки шрифта
-FONT_NAME = "FreeSerif"  # Убедись, что этот шрифт есть в системе!
+FONT_NAME = "FreeSerif"
 FONT_SIZE_PT = 9
 
 SOFFICE = r"C:\Program Files\LibreOffice\program\soffice.exe"

@@ -291,6 +291,11 @@ export default {
   background: rgba(148, 163, 184, 0.2);
 }
 
+.user-form {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
 @media (max-width: 720px) {
   .grid,
   .cols-list {

@@ -43,9 +43,8 @@
         <select v-model="local.status" @change="onStatusChange">
           <option value="В ожидании">⏳ В ожидании</option>
           <option value="Просрочено">⚠️ Просрочено</option>
-          <option value="Оплачено">✅ Оплачено (платёж)</option>
+          <option value="Оплачено">✅ Оплачено</option>
           <option value="Закрыт">🔒 Закрыт</option>
-          <option value="Истек">📅 Истек</option>
         </select>
       </div>
       
@@ -100,9 +99,17 @@ export default {
         local.value.lastPaymentDate = new Date().toISOString().split('T')[0];
         
         if (newDebt <= 0) {
+          // Полностью погашено
           local.value.status = "Закрыт";
           local.value.debtRemaining = 0;
           local.value.paidAmount = local.value.totalAmount || 0;
+        } else {
+          // Переместить дату платежа на следующий месяц
+          if (local.value.paymentDate) {
+            const pDate = new Date(local.value.paymentDate);
+            pDate.setMonth(pDate.getMonth() + 1);
+            local.value.paymentDate = pDate.toISOString().split('T')[0];
+          }
         }
       }
     }

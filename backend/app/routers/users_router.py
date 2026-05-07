@@ -18,17 +18,13 @@ router = APIRouter(prefix="/users", tags=["users"], dependencies=[Depends(get_cu
 
 @router.get("", response_model=List[dict])
 def list_users():
-    """Возвращает всех пользователей и обновляет их статусы на основе дат."""
+    """Возвращает всех пользователей и обновляет их статусы на основе дат платежей."""
     ensure_settings()
     today = datetime.now().strftime("%Y-%m-%d")
 
+    # Обновляем статус на "Просрочено" если дата платежа прошла и статус не закрыт
     db.users.update_many(
-        {"expirationDate": {"$lt": today}, "status": {"$nin": ["Закрыт", "Истек"]}},
-        {"$set": {"status": "Истек"}},
-    )
-
-    db.users.update_many(
-        {"paymentDate": {"$lt": today}, "status": "В ожидании"},
+        {"paymentDate": {"$lt": today}, "status": {"$nin": ["Оплачено", "Закрыт"]}},
         {"$set": {"status": "Просрочено"}},
     )
 
@@ -66,10 +62,6 @@ def update_user(uid: str, payload: UserModel):
     data = payload.model_dump(exclude_none=True)
     today = datetime.now().strftime("%Y-%m-%d")
 
-    if data.get("expirationDate") and data.get("expirationDate") < today:
-        if data.get("status") not in ["Закрыт", "Истек"]:
-            data["status"] = "Истек"
-
     if data.get("status") == "Оплачено" and user.get("status") != "Оплачено":
         monthly_payment = user.get("monthlyPayment", 0) or 0
         current_debt = user.get("debtRemaining", 0) or 0
@@ -99,10 +91,14 @@ def update_user(uid: str, payload: UserModel):
                 data["debtRemaining"] = 0.0
                 data["paidAmount"] = user.get("totalAmount", 0)
 
-    if user.get("paymentDate") and user.get("paymentDate") < today:
-        current_status = data.get("status", user.get("status"))
-        if current_status not in ["Оплачено", "Закрыт", "Истек"]:
+    final_status = data.get("status", user.get("status"))
+    if final_status not in ["Оплачено", "Закрыт"]:
+        # Используем paymentDate из data (если обновлена) или из user (текущее значение)
+        payment_date = data.get("paymentDate", user.get("paymentDate"))
+        if payment_date and payment_date < today:
             data["status"] = "Просрочено"
+        else:
+            data["status"] = "В ожидании"
 
     db.users.update_one({"_id": obj_id}, {"$set": data})
     updated_user = db.users.find_one({"_id": obj_id})

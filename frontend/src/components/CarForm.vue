@@ -53,7 +53,10 @@
 
     <!-- ✅ Кнопки действия -->
     <div class="actions">
-      <button class="save" @click="saveModel">💾 Сохранить</button>
+      <button class="save" @click="saveModel" :disabled="isSaving">
+        <span v-if="isSaving" class="spinner"></span>
+        {{ isSaving ? 'Сохранение...' : '💾 Сохранить' }}
+      </button>
       <button class="cancel" @click="$emit('cancel')">❌ Отмена</button>
     </div>
   </div>
@@ -82,6 +85,7 @@ export default {
 
     // ✅ Флаг для проверки, редактируем ли мы существующую машину
     const isEditMode = computed(() => !!localModel.value._id);
+    const isSaving = ref(false);
 
     /**
      * ✅ Сохранить машину в базу данных
@@ -92,6 +96,7 @@ export default {
      * 3. Уведомляем родителя об успешном сохранении
      */
     async function saveModel() {
+      isSaving.value = true;
       try {
         if (isEditMode.value) {
           // ✅ Обновление существующей машины
@@ -105,10 +110,12 @@ export default {
       } catch (e) {
         alert("❌ Ошибка при сохранении машины: " + e.message);
         console.error("Save error:", e);
+      } finally {
+        isSaving.value = false;
       }
     }
 
-    return { localModel, saveModel, isEditMode };
+    return { localModel, saveModel, isEditMode, isSaving };
   },
 };
 </script>
@@ -187,8 +194,27 @@ export default {
 .save {
   background: #3b82f6;
   color: white;
+  display: inline-flex;
+  align-items: center;
 }
 .save:hover { background: #2563eb; }
+.save:disabled { background: #6c757d; cursor: not-allowed; }
+
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 6px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
 
 .cancel {
   background: #f3f4f6;

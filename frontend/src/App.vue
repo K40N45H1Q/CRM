@@ -1,22 +1,24 @@
 <template>
-  <div>
+  <div class="wrapper">
     <div v-if="!isLoggedIn" class="login-screen">
+      <div v-if="authError" class="error-message">{{ authError }}</div>
       <div class="login-card">
-        <h1>Вход</h1>
-        <input v-model="username" placeholder="Имя пользователя" class="login-input" />
-        <input v-model="password" type="password" placeholder="Пароль" class="login-input" />
+        <input v-model="username" placeholder="Username" class="login-input" />
+        <input v-model="password" type="password" placeholder="Password" class="login-input" />
         <button class="login-button" @click="login" :disabled="loginInProgress">
-          {{ loginInProgress ? "Вход…" : "Войти" }}
+          {{ loginInProgress ? "Signing in…" : "Sign In" }}
         </button>
-        <div v-if="authError" class="error-message">{{ authError }}</div>
       </div>
     </div>
 
     <div v-else class="app-container">
       <header class="top-bar">
         <h1>CRM</h1>
+        <div class="filter">
+          
+        </div>
         <div class="controls">
-          <input v-model="searchQuery" placeholder="Поиск по таблице..." class="search-input"/>
+          <input v-model="searchQuery" placeholder="Поиск..." class="search-input"/>
           <select v-model="currentTable" @change="loadTableData">
             <option value="users">Пользователи</option>
             <option value="cars">Машины</option>
@@ -71,16 +73,6 @@
 </template>
 
 <script>
-/**
- * ✅ ГЛАВНЫЙ КОМПОНЕНТ ПРИЛОЖЕНИЯ
- * 
- * Отвечает за:
- * 1. Управление состоянием приложения (пользователи, машины, настройки)
- * 2. Загрузку данных с сервера при запуске
- * 3. Управление модальными окнами (форма добавления, редактирования, настройки, файлы)
- * 4. Синхронизацию данных между компонентами
- */
-
 import { ref, computed, onMounted, shallowRef, markRaw } from "vue";
 import { api } from "./api";
 import { COLUMN_LABELS_RU, SENSITIVE_FIELDS } from "./constants";
@@ -215,13 +207,13 @@ export default {
         const r = await api.login(username.value, password.value);
         localStorage.setItem("authToken", r.access_token);
         isLoggedIn.value = true;
-        username.value = "";
-        password.value = "";
         await loadAll();
       } catch (e) {
-        authError.value = e.message || "Ошибка входа";
+        authError.value = "Invalid credentials!";
       } finally {
         loginInProgress.value = false;
+        username.value = "";
+        password.value = "";
       }
     }
 
@@ -377,7 +369,7 @@ html, body, #app {
 
 /* ✅ Сам контейнер */
 .app-container {
-  width: 1800px;
+  width: 100%;
   height: 100%;
   padding: 20px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -390,16 +382,6 @@ html, body, #app {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
-/* ✅ Остальные стили */
-.top-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding-bottom: 12px;
-  width: 100%;
-}
-
 .top-bar h1 {
   color: #00FFFF;
   border-left: 4px solid #00FFFF;
@@ -409,10 +391,11 @@ html, body, #app {
 }
 
 .controls {
+  width: 100%;
   display: flex;
   gap: 8px;
   align-items: center;
-  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .controls input,
@@ -445,18 +428,10 @@ html, body, #app {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-direction: column;
   background: #000;
 }
 
-.login-card {
-  width: min(420px, 100%);
-  padding: 30px;
-  border: 1px solid #00ffff;
-  border-radius: 16px;
-  background: #0a1222;
-  box-shadow: 0 20px 60px rgba(0, 255, 255, 0.15);
-  text-align: center;
-}
 
 .login-card h1 {
   margin-bottom: 20px;
@@ -522,10 +497,6 @@ html, body, #app {
   min-width: 700px;
 }
 
-.search-input {
-  width: 300px;
-}
-
 .modal {
   width: 50%;
   border: 1px solid #00FFFF !important;
@@ -571,6 +542,109 @@ button {
 
 .tabulator-tableholder {
   background-color: #000 !important;
+}
+
+.wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  width: 100%;
+}
+
+.login-card {
+  width: min(420px, 100%);
+  padding: 30px;
+  border: 2px solid #00ffff;
+  border-radius: 16px;
+  background: #000;
+  box-shadow: 7px 7px #00ffff;
+  text-align: center;
+}
+
+.login-card input{
+  text-align: center;
+  caret-color: transparent;
+}
+
+.login-card input::placeholder {
+  color: #00ffff5d;
+}
+
+.login-card button {
+  width: 100%;
+}
+
+.error-message {
+  width: min(420px, 100%) !important;
+  color: #F72119;
+  width: 100%;
+  position: absolute;
+  padding: 10px;
+  border-radius: 16px;
+  text-align: center;
+  transform: translateY(-150px);
+  border: #F72119 2px solid;
+  animation: show 7s ease forwards;
+}
+
+@keyframes show {
+  0% {
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.top-bar {
+  height: 100%;
+  display: flex;
+  border: #00FFFF 1px solid;
+  align-items: center;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 10px;
+  border-radius: 16px;
+}
+
+.top-bar button {
+  width: max-content;
+}
+
+
+* {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+}
+
+.search-input::placeholder {
+  color: #00ffff5d;
+}
+
+
+.search-input {
+  flex: 1 !important;
+}
+
+.tabulator-cell {
+  text-align: center !important;
+  height: 100% !important;
+  flex-direction: row-reverse !important;
+}
+
+input[type="date"]::-webkit-datetime-edit {
+  color: #333;
+  font-size: 16px;
 }
 
 </style>
