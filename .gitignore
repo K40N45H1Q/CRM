@@ -81,8 +81,5 @@ Desktop.ini
 *.orig
 *.old
 
-# Certificates and secrets
-ssl/
-
 # Optional: local VS Code settings
 .vscode/
